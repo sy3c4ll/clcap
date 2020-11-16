@@ -11,9 +11,11 @@ void analyse(Mat &src,Mat &dest,Obj obj){
     erode(dest,dest,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
 }
 int main(int argc,char **argv){
-    VideoCapture cap0(0),cap1(2),cap2(5);
-    if(!cap0.isOpened()||!cap1.isOpened()||!cap2.isOpened()){printf("Could not load media source\n");return -1;}
-    Obj RED={170,180,115,205,115,240},BLUE={0,0,0,0,0,0};//TODO
+    VideoCapture cap0(0),cap1(2),cap2(4);
+    if(!cap1.isOpened()){printf("Could not load 1\n");return -1;}
+    if(!cap0.isOpened()){printf("Could not load 0\n");return -1;}
+    if(!cap2.isOpened()){printf("Could not load 2\n");return -1;}
+    Obj RED={170,180,115,205,115,240},BLUE={100,120,120,250,140,220};//TODO
     Mat img[3],imgHSV[3],imgRed[3],imgBlue[3];
     Moments mmtRed,mmtBlue;
     for(;;){
