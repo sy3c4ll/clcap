@@ -2,7 +2,7 @@
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgproc.hpp>
 #define MAXCAPNUM 1
-#define COLOURNUM 2
+#define COLOURNUM 9
 using namespace cv;
 typedef struct{int lowH,highH,lowS,highS,lowV,highV;} Colour;
 void analyse(Mat &src,Mat &dest,Colour obj){
@@ -22,17 +22,12 @@ int main(int argc,char **argv){
     }
     if(capNum<=0){printf("No cameras found. Quitting...\n");return -1;}
     else printf("%d webcams found.\n",capNum);
-    //{20,55,84},{22,50,85}주황색{18,62,74},{20,54,75}
-    //{47,89,89},{48,88,89}노란색{46,82,76},{46,82,76}
-    //{95,54,53},{95,49,59}연녹색{112,43,42},{107,39,47}
-    //{137,52,54},{139,49,59}초록색{150,47,51},{150,47,51}
-    //{203,46,77},{204,52,76}진청색{201,50,76},{202,51,76}
-    //{206,69,77},{206,66,80}남색{206,81,71},{205,80,72}
-    //{324,40,44},{326,38,45}진밤색{319,33,41},{318,32,42}
-    //{332,57,83},{331,54,84}빨간색{328,55,71},{329,53,71}
-    //{351,39,78},{352,36,79}핑크색{349,36,75},{347,35,74}
-    //0: RED, 1: BLUE
-    Colour COLOUR[COLOURNUM]={{170,180,115,205,115,240},{100,120,120,250,140,220}};
+    Colour COLOUR[COLOURNUM]={};
+    FILE *f=fopen("data.csv","r");
+    if(f==NULL){printf("Cannot open data file. Quitting...\n");return -1;}
+    fscanf(f,",highH,lowH,highS,lowS,highV,lowV");
+    for(int i=0;i<COLOURNUM;i++)fscanf(f,"%*s,%d,%d,%d,%d,%d,%d",&COLOUR[i].lowH,&COLOUR[i].highH,&COLOUR[i].lowS,&COLOUR[i].highS,&COLOUR[i].lowV,&COLOUR[i].highV);
+    fclose(f);
     Mat img[MAXCAPNUM],imgHSV[MAXCAPNUM],imgColour[COLOURNUM][MAXCAPNUM];
     Moments mmt[COLOURNUM];
     for(;;)for(size_t i=0;(int)i<capNum;i++){
