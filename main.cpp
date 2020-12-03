@@ -3,14 +3,17 @@
 #include<opencv2/imgproc.hpp>
 #define MAXCAPNUM 1
 #define COLOURNUM 2
+#define SEARCHWINDOW 200
+#define max(a,b) ((a)>(b)?(a):(b))
+#define min(a,b) ((a)<(b)?(a):(b))
 using namespace cv;
 typedef struct{int lowH,highH,lowS,highS,lowV,highV;} Colour;
-void analyse(Mat &src,Mat &dest,Colour obj){
-    inRange(src,Scalar(obj.lowH,obj.lowS,obj.lowV),Scalar(obj.highH,obj.highS,obj.highV),dest);
-    erode(dest,dest,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
-    dilate(dest,dest,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
-    dilate(dest,dest,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
-    erode(dest,dest,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
+inline void analyse(Mat &img,Colour obj){
+    inRange(img,Scalar(obj.lowH,obj.lowS,obj.lowV),Scalar(obj.highH,obj.highS,obj.highV),img);
+    erode(img,img,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
+    dilate(img,img,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
+    dilate(img,img,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
+    erode(img,img,getStructuringElement(MORPH_ELLIPSE,Size(5,5)));
 }
 int main(int argc,char **argv){
     VideoCapture cap[MAXCAPNUM];int capNum=0;
@@ -35,15 +38,24 @@ int main(int argc,char **argv){
     Colour COLOUR[COLOURNUM]={{170,180,115,205,115,240},{100,120,120,250,140,220}};
     Mat img[MAXCAPNUM],imgHSV[MAXCAPNUM],imgColour[COLOURNUM][MAXCAPNUM];
     Moments mmt[COLOURNUM];
+    int prevX[COLOURNUM][MAXCAPNUM]={},prevY[COLOURNUM][MAXCAPNUM]={};
+    bool prevExists[COLOURNUM][MAXCAPNUM]={};
     for(;;)for(size_t i=0;(int)i<capNum;i++){
         if(!cap[i].read(img[i])){printf("Could not read from media source %d\n",(int)i);return -1;}
         cvtColor(img[i],imgHSV[i],COLOR_BGR2HSV);
         for(size_t j=0;j<COLOURNUM;j++){
-            analyse(imgHSV[i],imgColour[j][i],COLOUR[i]);
+            if(prevExists[j][i])imgColour[j][i]=imgHSV[i](Range(max(prevX[j][i]-SEARCHWINDOW,0),min(prevX[j][i]+SEARCHWINDOW,imgHSV[i].cols)),Range(max(prevY[j][i]-SEARCHWINDOW,0),min(prevY[j][i]+SEARCHWINDOW,imgHSV[i].rows)));
+            else imgColour[j][i]=imgHSV[i];
+            analyse(imgColour[j][i],COLOUR[j]);
             mmt[j]=moments(imgColour[j][i]);
-            if(mmt[j].m00>10000){circle(img[i],Point2i(mmt[j].m10/mmt[j].m00,mmt[j].m01/mmt[j].m00),20,Scalar(75,50,210),4,3);}
+            if(mmt[j].m00>10000){
+                prevX[j][i]+=mmt[j].m10/mmt[j].m00-SEARCHWINDOW;
+                prevY[j][i]+=mmt[j].m01/mmt[j].m00-SEARCHWINDOW;
+                circle(img[i],Point2i(prevX[j][i],prevY[j][i]),20,Scalar(75,50,210),4,3);
+                prevExists[j][i]=true;
+            }
         }
-        imshow("Image"+std::to_string(i),img[i]);
+        imshow("Image "+std::to_string(i),img[i]);
         if(waitKey(1)==27){printf("ESC key pressed by user. Quitting...\n");return 0;}
     }
     return 0;
